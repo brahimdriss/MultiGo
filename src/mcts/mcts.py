@@ -3,11 +3,13 @@ import random
 
 from MultiGo.src import agent
 from MultiGo.src.gotypes import Player
-#from MultiGo.src.utils import coords_from_point
+
+# from MultiGo.src.utils import coords_from_point
 
 __all__ = [
-    'MCTSAgent',
+    "MCTSAgent",
 ]
+
 
 class MCTSNode(object):
     def __init__(self, game_state, parent=None, move=None):
@@ -44,6 +46,7 @@ class MCTSNode(object):
     def winning_frac(self, player):
         return float(self.win_counts[player]) / float(self.num_rollouts)
 
+
 class MCTSAgent(agent.Agent):
     def __init__(self, num_rounds, temperature):
         agent.Agent.__init__(self)
@@ -72,7 +75,7 @@ class MCTSAgent(agent.Agent):
             for child in root.children
         ]
         scored_moves.sort(key=lambda x: x[0], reverse=True)
-        #for s, m, n in scored_moves[:10]:
+        # for s, m, n in scored_moves[:10]:
         #    print('%s - %.3f (%d)' % (m, s, n))
 
         best_move = None
@@ -82,7 +85,7 @@ class MCTSAgent(agent.Agent):
             if child_pct > best_pct:
                 best_pct = child_pct
                 best_move = child.move
-        #print('Select move %s with win pct %.3f' % (best_move, best_pct))
+        # print('Select move %s with win pct %.3f' % (best_move, best_pct))
         return best_move
 
     def select_child(self, node):

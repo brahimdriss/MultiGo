@@ -3,6 +3,7 @@ from collections import namedtuple
 
 from MultiGo.src.gotypes import Player, Point
 
+
 class Territory(object):
     def __init__(self, territory_map):
         self.num_black_territory = 0
@@ -20,24 +21,28 @@ class Territory(object):
                 self.num_white_stones += 1
             elif status == Player.red:
                 self.num_red_stones += 1
-            elif status == 'territory_b':
+            elif status == "territory_b":
                 self.num_black_territory += 1
-            elif status == 'territory_w':
+            elif status == "territory_w":
                 self.num_white_territory += 1
-            elif status == 'territory_r':
+            elif status == "territory_r":
                 self.num_white_territory += 1
-            elif status == 'dame':
+            elif status == "dame":
                 self.num_dame += 1
                 self.dame_points.append(point)
 
 
 # change with class GameResult(namedtuple('GameResult', 'b w r komi')):
-#class GameResult(namedtuple('GameResult', 'b w komi')):
-class GameResult(namedtuple('GameResult', 'b w r komi')):
+# class GameResult(namedtuple('GameResult', 'b w komi')):
+class GameResult(namedtuple("GameResult", "b w r komi")):
     @property
     def winner(self):
-        scores = [(Player.black,self.b),(Player.white,self.w + self.komi),(Player.red,self.r+self.komi)]
-        return max(scores, key = lambda x: x[1])[0]
+        scores = [
+            (Player.black, self.b),
+            (Player.white, self.w + self.komi),
+            (Player.red, self.r + self.komi),
+        ]
+        return max(scores, key=lambda x: x[1])[0]
         # if self.b > self.w + self.komi:
         #     return Player.black
         # return Player.white
@@ -50,8 +55,9 @@ class GameResult(namedtuple('GameResult', 'b w r komi')):
     def __str__(self):
         w = self.w + self.komi
         if self.b > w:
-            return 'B+%.1f' % (self.b - w,)
-        return 'W+%.1f' % (w - self.b,)
+            return "B+%.1f" % (self.b - w,)
+        return "W+%.1f" % (w - self.b,)
+
 
 def _collect_region(start_pos, board, visited=None):
     if visited is None:
@@ -76,6 +82,7 @@ def _collect_region(start_pos, board, visited=None):
             all_borders.add(neighbor)
     return all_points, all_borders
 
+
 def evaluate_territory(board):
     status = {}
     for r in range(1, board.num_rows + 1):
@@ -91,17 +98,18 @@ def evaluate_territory(board):
                 if len(neighbors) == 1:
                     neighbor_stone = neighbors.pop()
                     if neighbor_stone == Player.black:
-                        stone_str = 'b'
+                        stone_str = "b"
                     elif neighbor_stone == Player.white:
-                        stone_str = 'w'
+                        stone_str = "w"
                     else:
-                        stone_str = 'r'
-                    fill_with = 'terrtory_' + stone_str
+                        stone_str = "r"
+                    fill_with = "terrtory_" + stone_str
                 else:
-                    fill_with = 'dame'
+                    fill_with = "dame"
                 for pos in group:
                     status[pos] = fill_with
     return Territory(status)
+
 
 def compute_game_result(game_state):
     territory = evaluate_territory(game_state.board)
@@ -109,5 +117,6 @@ def compute_game_result(game_state):
         territory.num_black_territory + territory.num_black_stones,
         territory.num_white_territory + territory.num_white_stones,
         territory.num_red_territory + territory.num_red_stones,
-        komi = 0)
-        #komi=7.5)
+        komi=0,
+    )
+    # komi=7.5)
