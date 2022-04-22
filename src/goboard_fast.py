@@ -329,10 +329,10 @@ class GameState:
         return next_situation in self.previous_states
 
     def is_valid_move(self, move):
-        if self.is_over():
-            return False
         if move.is_pass or move.is_resign:
             return True
+        if self.is_over():
+            return False
         return (
             self.board.get(move.point) is None
             and not self.is_move_self_capture(self.next_player, move)
@@ -350,8 +350,6 @@ class GameState:
         return self.last_move.is_pass and second_last_move.is_pass
 
     def legal_moves(self):
-        if self.is_over():
-            return []
         moves = []
         for row in range(1, self.board.num_rows + 1):
             for col in range(1, self.board.num_cols + 1):
