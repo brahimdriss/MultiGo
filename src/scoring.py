@@ -51,13 +51,17 @@ class GameResult(namedtuple("GameResult", "b w r komi")):
     def winning_margin(self):
         w = self.w + self.komi
         return abs(self.b - w)
+    
+    @property
+    def final_scores(self):
+        return [self.b,self.w,self.r]
 
     def __str__(self):
-        w = self.w + self.komi
-        if self.b > w:
-            return "B+%.1f" % (self.b - w,)
-        return "W+%.1f" % (w - self.b,)
-
+        #w = self.w + self.komi
+        #if self.b > w:
+            #return "B+%.1f" % (self.b - w,)
+        #return "W+%.1f" % (w - self.b,)
+        return f"B {self.b} W {self.w} R{self.r}"
 
 def _collect_region(start_pos, board, visited=None):
     if visited is None:
