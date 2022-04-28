@@ -1,5 +1,6 @@
 import numpy as np
 
+from MultiGo.src.goboard_fast import Board
 from MultiGo.src.goboard_fast import Move
 from MultiGo.src.gotypes import Player, Point
 
@@ -7,44 +8,56 @@ from MultiGo.src.gotypes import Player, Point
 class ZeroEncoder:
     def __init__(self, board_size):
         self.board_size = board_size
-        # 0 - 3. our stones with 1, 2, 3, 4+ liberties
-        # 4 - 7. next opponent stones with 1, 2, 3, 4+ liberties
-        # 8 - 11. last opponent stones with 1, 2, 3, 4+ liberties
-        # 12. 1 if we get komi
-        # 13. 1 if opponent gets komi
-        # 14. 1 if second opponent gets komi
-        # 15. move would be illegal due to ko
-        self.num_planes = 11 + 4 + 1
+        # 0 - 3   - black previous and current stones
+        # 4 - 7   - white previous and current stones
+        # 8 - 11  - red previous and current stones
+        # 12      - black to play
+        # 13 	  - white to play
+        # 14 	  - red to play
+        self.num_planes = 15
 
+    def board_to_planes(self, board):
+        black = np.zeros((self.board_size, self.board_size))
+        white = np.zeros((self.board_size, self.board_size))
+        red = np.zeros((self.board_size, self.board_size))
+
+        planes = [black, white, red]
+        colors = [Player.black, Player.white, Player.red]
+
+        for r in range(self.board_size):
+            for c in range(self.board_size):
+                p = Point(row=r + 1, col=c + 1)
+                go_string = board.get_go_string(p)
+                if go_string is not None:
+                    idx = colors.index(go_string.color)
+                    planes[idx][r][c] = 1
+
+        return planes
+    
     def encode(self, game_state):
         board_tensor = np.zeros(self.shape())
         next_player = game_state.next_player
+        
+        history = game_state._hist
+        empty = Board(self.board_size, self.board_size)
+        while len(history) <4:
+            history.appendleft(empty)
 
         colors = [Player.black, Player.white, Player.red]
         pos = colors.index(next_player)
 
         if game_state.next_player == Player.white:
-            board_tensor[8 + 4] = 1
-            board_tensor[9 + 4] = 1
+            board_tensor[13] = 1
         elif game_state.next_player == Player.red:
-            board_tensor[8 + 4] = 1
-            board_tensor[10 + 4] = 1
+            board_tensor[14] = 1
         else:
-            board_tensor[9 + 4] = 1
-            board_tensor[10 + 4] = 1
+            board_tensor[12] = 1
 
-        for r in range(self.board_size):
-            for c in range(self.board_size):
-                p = Point(row=r + 1, col=c + 1)
-                go_string = game_state.board.get_go_string(p)
-
-                if go_string is None:
-                    if game_state.does_move_violate_ko(next_player, Move.play(p)):
-                        board_tensor[11 + 4][r][c] = 1
-                else:
-                    liberty_plane = min(4, go_string.num_liberties) - 1
-                    liberty_plane += ((pos + 2) % 3) * 4
-                    board_tensor[liberty_plane][r][c] = 1
+        for idx, board in enumerate(history):
+            black, white, red = self.board_to_planes(board)
+            board_tensor[0+idx] = black
+            board_tensor[4+idx] = white
+            board_tensor[8+idx] = red
 
         return board_tensor
 

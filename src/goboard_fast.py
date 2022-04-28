@@ -3,6 +3,7 @@ from MultiGo.src.gotypes import Player, Point
 from MultiGo.src.scoring import compute_game_result
 from MultiGo.src import zobrist
 from MultiGo.src.utils import MoveAge
+from collections import deque
 
 __all__ = [
     "Board",
@@ -285,6 +286,7 @@ class GameState:
         self.board = board
         self.next_player = next_player
         self.previous_state = previous
+        self._hist = deque()
         if previous is None:
             self.previous_states = frozenset()
         else:
@@ -300,7 +302,9 @@ class GameState:
             next_board.place_stone(self.next_player, move.point)
         else:
             next_board = self.board
-        return GameState(next_board, self.next_player.other, self, move)
+        next_state = GameState(next_board, self.next_player.other, self, move)
+        next_state._hist = self._hist
+        return next_state
 
     @classmethod
     def new_game(cls, board_size):
@@ -368,3 +372,8 @@ class GameState:
             return self.next_player
         game_result = compute_game_result(self)
         return game_result.winner
+
+    def add_history(self,board):
+        self._hist.append(board)
+        if len(self._hist) > 4:
+            self._hist.popleft()
