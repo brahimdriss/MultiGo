@@ -133,7 +133,7 @@ class ZeroAgent(Agent):
             parent.add_child(move, new_node)
         return new_node
 
-    def train(self, experience, learning_rate, batch_size):
+    def train(self, experience, learning_rate, batch_size,epochs = 10):
         num_examples = experience.states.shape[0]
 
         model_input = experience.states
@@ -144,8 +144,8 @@ class ZeroAgent(Agent):
         value_target = experience.rewards
 
         self.model.compile(
-            SGD(lr=learning_rate), loss=["categorical_crossentropy", "mse"]
+            SGD(lr=learning_rate), loss=["categorical_crossentropy", "mse"],metrics={'policy': 'categorical_accuracy', 'value': 'mse'}
         )
         self.model.fit(
-            model_input, [action_target, value_target], batch_size=batch_size
+            model_input, [action_target, value_target], batch_size=batch_size,epochs=epochs
         )

@@ -20,7 +20,7 @@ def simulate_game(
     red_agent,
     red_collector,
 ):
-    print("Starting the game!")
+    #print("Starting the game!")
     game = GameState.new_game(board_size)
     agents = {
         Player.black: black_agent,

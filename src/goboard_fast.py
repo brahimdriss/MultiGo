@@ -362,14 +362,14 @@ class GameState:
                     moves.append(move)
         # these two moves are always legal
         moves.append(Move.pass_turn())
-        moves.append(Move.resign())
+        #moves.append(Move.resign())
         return moves
 
     def winner(self):
         if not self.is_over():
             return None
-        if self.last_move.is_resign:
-            return self.next_player
+        #if self.last_move.is_resign:
+            #return self.next_player
         game_result = compute_game_result(self)
         return game_result.winner
 

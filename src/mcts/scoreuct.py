@@ -1,4 +1,5 @@
 import math
+import numpy as np
 import random
 
 from MultiGo.src import agent
@@ -50,12 +51,22 @@ class MCTS_score_Node(object):
     def score_frac(self, player):
         return float(self.score[player.value-1]) / float(self.num_rollouts)
 
+    def visit_count(self, move):
+        child_moves = {}
+        for child in self.children:
+            child_moves[child.move] = child.num_rollouts
+        if move in child_moves:
+            return child_moves[move]
+        return 0
+
 
 class MCTS_score_Agent(agent.Agent):
     def __init__(self, num_rounds, temperature):
         agent.Agent.__init__(self)
         self.num_rounds = num_rounds
         self.temperature = temperature
+        self.collector = None
+        self.encoder = None
 
     def select_move(self, game_state):
         root = MCTS_score_Node(game_state)
@@ -89,6 +100,16 @@ class MCTS_score_Agent(agent.Agent):
         #         best_child = child
         # print('Select move %s with win pct %.3f' % (best_move, best_pct))
         best_move = scored_moves[0][0]
+
+        if self.collector is not None:
+            root_state_tensor = self.encoder.encode(game_state)
+            visit_counts = np.array(
+                [
+                    root.visit_count(self.encoder.decode_move_index(idx))
+                    for idx in range(self.encoder.num_moves())
+                ]
+            )
+            self.collector.record_decision(root_state_tensor, visit_counts)
         return best_move
 
     def select_child(self, node):
@@ -120,3 +141,9 @@ class MCTS_score_Agent(agent.Agent):
         game_result = scoring.compute_game_result(game)
         result = game_result.final_scores
         return result
+    
+    def set_collector(self, collector):
+        self.collector = collector
+
+    def set_encoder(self, encoder):
+        self.encoder = encoder
