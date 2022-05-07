@@ -26,7 +26,7 @@ class Territory(object):
             elif status == "territory_w":
                 self.num_white_territory += 1
             elif status == "territory_r":
-                self.num_white_territory += 1
+                self.num_red_territory += 1
             elif status == "dame":
                 self.num_dame += 1
                 self.dame_points.append(point)
@@ -40,7 +40,7 @@ class GameResult(namedtuple("GameResult", "b w r komi")):
         scores = [
             (Player.black, self.b),
             (Player.white, self.w + self.komi),
-            (Player.red, self.r + self.komi),
+            (Player.red, self.r + self.komi + (self.komi)/2),
         ]
         return max(scores, key=lambda x: x[1])[0]
         # if self.b > self.w + self.komi:
@@ -61,7 +61,7 @@ class GameResult(namedtuple("GameResult", "b w r komi")):
         #if self.b > w:
             #return "B+%.1f" % (self.b - w,)
         #return "W+%.1f" % (w - self.b,)
-        return f"B {self.b} W {self.w} R{self.r}"
+        return f"B {self.b} W {self.w} R {self.r}"
 
 def _collect_region(start_pos, board, visited=None):
     if visited is None:
@@ -107,7 +107,7 @@ def evaluate_territory(board):
                         stone_str = "w"
                     else:
                         stone_str = "r"
-                    fill_with = "terrtory_" + stone_str
+                    fill_with = "territory_" + stone_str
                 else:
                     fill_with = "dame"
                 for pos in group:
@@ -117,10 +117,19 @@ def evaluate_territory(board):
 
 def compute_game_result(game_state):
     territory = evaluate_territory(game_state.board)
+    b = (territory.num_black_territory,territory.num_black_stones)
+    w = (territory.num_white_territory,territory.num_white_stones)
+    r = (territory.num_red_territory,territory.num_red_stones)
     return GameResult(
         territory.num_black_territory + territory.num_black_stones,
         territory.num_white_territory + territory.num_white_stones,
         territory.num_red_territory + territory.num_red_stones,
-        komi=0,
+        komi=0.5,
     )
     # komi=7.5)
+def compute_territory(game_state):
+    territory = evaluate_territory(game_state.board)
+    b = (territory.num_black_territory,territory.num_black_stones)
+    w = (territory.num_white_territory,territory.num_white_stones)
+    r = (territory.num_red_territory,territory.num_red_stones)
+    return b,w,r

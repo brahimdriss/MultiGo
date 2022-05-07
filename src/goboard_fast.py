@@ -175,6 +175,7 @@ class Board:
     def _remove_string(self, string):
         for point in string.stones:
             self.move_ages.reset_age(point)
+            # removing a string can create liberties for other strings
             for neighbor in self.neighbor_table[point]:
                 neighbor_string = self._grid.get(neighbor)
                 if neighbor_string is None:
@@ -373,7 +374,7 @@ class GameState:
                 move = Move.play(Point(row, col))
                 if self.is_valid_move(move):
                     moves.append(move)
-        # these two moves are always legal
+        # these two moves are always legal / resing was removed
         moves.append(Move.pass_turn())
         return moves
 
