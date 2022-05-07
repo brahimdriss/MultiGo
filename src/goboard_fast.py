@@ -121,7 +121,8 @@ class Board:
         assert self._grid.get(point) is None
         # 0. examine the adjacent points
         adjacent_same_color = []
-        adjacent_opposite_color = []
+        adjacent_opposite_first = []
+        adjacent_opposite_second = []
         liberties = []
         self.move_ages.increment_all()
         self.move_ages.add(point)
@@ -132,9 +133,12 @@ class Board:
             elif neighbor_string.color == player:
                 if neighbor_string not in adjacent_same_color:
                     adjacent_same_color.append(neighbor_string)
+            elif neighbor_string.color == player.other:
+                if neighbor_string not in adjacent_opposite_first:
+                    adjacent_opposite_first.append(neighbor_string)
             else:
-                if neighbor_string not in adjacent_opposite_color:
-                    adjacent_opposite_color.append(neighbor_string)
+                if neighbor_string not in adjacent_opposite_second:
+                    adjacent_opposite_second.append(neighbor_string)                
         new_string = GoString(player, [point], liberties)
         # 1. merge any adjacent strings of the same color
         for same_color_string in adjacent_same_color:
@@ -149,7 +153,15 @@ class Board:
         #    color
         # 3. if any opposite color strings now have zero liberties,
         #    remove them
-        for other_color_string in adjacent_opposite_color:
+        for other_color_string in adjacent_opposite_first:
+            other_color_string = self.get_go_string(list(other_color_string.stones)[0])
+            replacement = other_color_string.without_liberty(point)
+            if replacement.num_liberties:
+                self._replace_string(other_color_string.without_liberty(point))
+            else:
+                self._remove_string(other_color_string)
+        for other_color_string in adjacent_opposite_second:
+            other_color_string = self.get_go_string(list(other_color_string.stones)[0])
             replacement = other_color_string.without_liberty(point)
             if replacement.num_liberties:
                 self._replace_string(other_color_string.without_liberty(point))
@@ -163,12 +175,11 @@ class Board:
     def _remove_string(self, string):
         for point in string.stones:
             self.move_ages.reset_age(point)
-            # removing a string can create liberties for other strings
             for neighbor in self.neighbor_table[point]:
                 neighbor_string = self._grid.get(neighbor)
                 if neighbor_string is None:
                     continue
-                if neighbor_string is not string:
+                if neighbor_string.stones != string.stones and neighbor_string.color != string.color :
                     self._replace_string(neighbor_string.with_liberty(point))
             self._grid[point] = None
             # remove filled point hash code
@@ -191,6 +202,8 @@ class Board:
                     # this move is real capture, not a self capture
                     return False
         if all(neighbor.num_liberties == 1 for neighbor in friendly_strings):
+            return True
+        elif all( (self._grid.get(neighbor).color != player and self._grid.get(neighbor).color is not None) for neighbor in self.neighbor_table[point]):
             return True
         return False
 
@@ -362,14 +375,11 @@ class GameState:
                     moves.append(move)
         # these two moves are always legal
         moves.append(Move.pass_turn())
-        #moves.append(Move.resign())
         return moves
 
     def winner(self):
         if not self.is_over():
             return None
-        #if self.last_move.is_resign:
-            #return self.next_player
         game_result = compute_game_result(self)
         return game_result.winner
 
