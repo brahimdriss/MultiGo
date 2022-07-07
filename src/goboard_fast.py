@@ -1,6 +1,7 @@
 import copy
 from MultiGo.src.gotypes import Player, Point
 from MultiGo.src.scoring import compute_game_result
+from MultiGo.src.agent.helpers import is_point_an_eye
 from MultiGo.src import zobrist
 from MultiGo.src.utils import MoveAge
 from collections import deque
@@ -138,7 +139,7 @@ class Board:
                     adjacent_opposite_first.append(neighbor_string)
             else:
                 if neighbor_string not in adjacent_opposite_second:
-                    adjacent_opposite_second.append(neighbor_string)                
+                    adjacent_opposite_second.append(neighbor_string)
         new_string = GoString(player, [point], liberties)
         # 1. merge any adjacent strings of the same color
         for same_color_string in adjacent_same_color:
@@ -180,7 +181,10 @@ class Board:
                 neighbor_string = self._grid.get(neighbor)
                 if neighbor_string is None:
                     continue
-                if neighbor_string.stones != string.stones and neighbor_string.color != string.color :
+                if (
+                    neighbor_string.stones != string.stones
+                    and neighbor_string.color != string.color
+                ):
                     self._replace_string(neighbor_string.with_liberty(point))
             self._grid[point] = None
             # remove filled point hash code
@@ -204,7 +208,13 @@ class Board:
                     return False
         if all(neighbor.num_liberties == 1 for neighbor in friendly_strings):
             return True
-        elif all( (self._grid.get(neighbor).color != player and self._grid.get(neighbor).color is not None) for neighbor in self.neighbor_table[point]):
+        elif all(
+            (
+                self._grid.get(neighbor).color != player
+                and self._grid.get(neighbor).color is not None
+            )
+            for neighbor in self.neighbor_table[point]
+        ):
             return True
         return False
 
@@ -296,11 +306,11 @@ class Move:
 
 
 class GameState:
-    def __init__(self, board, next_player, previous, move):
+    def __init__(self, board, next_player, previous, move, turn):
         self.board = board
         self.next_player = next_player
         self.previous_state = previous
-        self._hist = deque()
+        self.turn = turn
         if previous is None:
             self.previous_states = frozenset()
         else:
@@ -316,8 +326,13 @@ class GameState:
             next_board.place_stone(self.next_player, move.point)
         else:
             next_board = self.board
-        next_state = GameState(next_board, self.next_player.other, self, move)
-        next_state._hist = self._hist
+        if self.turn < 70:
+            next_turn = self.turn + 1
+        else:
+            next_turn = self.turn
+        next_state = GameState(
+            next_board, self.next_player.other, self, move, next_turn
+        )
         return next_state
 
     @classmethod
@@ -325,7 +340,7 @@ class GameState:
         if isinstance(board_size, int):
             board_size = (board_size, board_size)
         board = Board(*board_size)
-        return GameState(board, Player.black, None, None)
+        return GameState(board, Player.black, None, None, 0)
 
     def is_move_self_capture(self, player, move):
         if not move.is_play:
@@ -347,14 +362,17 @@ class GameState:
         return next_situation in self.previous_states
 
     def is_valid_move(self, move):
-        if move.is_pass or move.is_resign:
-            return True
+        # [X] Add eye in invalid moves, pass when 0 legal moves
+        # [X] Remove pass from valid moves
+        if move.is_pass:
+            return False
         if self.is_over():
             return False
         return (
             self.board.get(move.point) is None
             and not self.is_move_self_capture(self.next_player, move)
             and not self.does_move_violate_ko(self.next_player, move)
+            and not is_point_an_eye(self.board, move.point, self.next_player)
         )
 
     def is_over(self):
@@ -365,18 +383,42 @@ class GameState:
         second_last_move = self.previous_state.last_move
         if second_last_move is None:
             return False
-        return self.last_move.is_pass and second_last_move.is_pass
+
+        if self.previous_state is not None:
+            third_last_move = self.previous_state.previous_state.last_move
+            if third_last_move is None:
+                return False
+        return (
+            self.last_move.is_pass
+            and second_last_move.is_pass
+            and third_last_move.is_pass
+        )
 
     def legal_moves(self):
         moves = []
         for row in range(1, self.board.num_rows + 1):
             for col in range(1, self.board.num_cols + 1):
-                move = Move.play(Point(row, col))
+                point = Point(row, col)
+                move = Move.play(point)
                 if self.is_valid_move(move):
                     moves.append(move)
-        # these two moves are always legal / resing was removed
-        moves.append(Move.pass_turn())
+        # Only pass when there are no legal moves (all possible moves are eyes)
+        if len(moves) == 0:
+            moves.append(Move.pass_turn())
         return moves
+
+    def eyes_count(self):
+        moves = []
+        eyes = []
+        for row in range(1, self.board.num_rows + 1):
+            for col in range(1, self.board.num_cols + 1):
+                point = Point(row, col)
+                move = Move.play(point)
+                if self.is_valid_move(move):
+                    moves.append(move)
+                if is_point_an_eye(self.board, point, self.next_player):
+                    eyes.append(move)
+        print(len(moves), len(eyes))
 
     def winner(self):
         if not self.is_over():
@@ -384,7 +426,7 @@ class GameState:
         game_result = compute_game_result(self)
         return game_result.winner
 
-    def add_history(self,board):
+    def add_history(self, board):
         self._hist.append(board)
         if len(self._hist) > 4:
             self._hist.popleft()
