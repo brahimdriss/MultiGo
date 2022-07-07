@@ -1,7 +1,10 @@
 __pycache__/
+*.txt
 .ipynb_checkpoints
-logs/
 debug/
 data/
+logs/
 nn/
+notebooks/
 results/
+
