@@ -5,6 +5,7 @@ import random
 from MultiGo.src import agent
 from MultiGo.src.gotypes import Player
 from MultiGo.src import scoring
+from MultiGo.src.goboard_fast import Move
 
 # from MultiGo.src.utils import coords_from_point
 
@@ -23,7 +24,7 @@ class MCTS_score_Node(object):
             Player.white: 0,
             Player.red: 0,
         }
-        self.score = [0,0,0]
+        self.score = [0, 0, 0]
         self.num_rollouts = 0
         self.children = []
         self.univisted_moves = game_state.legal_moves()
@@ -49,7 +50,7 @@ class MCTS_score_Node(object):
         return self.game_state.is_over()
 
     def score_frac(self, player):
-        return float(self.score[player.value-1]) / float(self.num_rollouts)
+        return float(self.score[player.value - 1]) / float(self.num_rollouts)
 
     def visit_count(self, move):
         child_moves = {}
@@ -61,15 +62,20 @@ class MCTS_score_Node(object):
 
 
 class MCTS_score_Agent(agent.Agent):
-    def __init__(self, num_rounds, temperature):
+    def __init__(self, num_rounds, temperature, policy=0):
         agent.Agent.__init__(self)
         self.num_rounds = num_rounds
         self.temperature = temperature
         self.collector = None
         self.encoder = None
+        self.use_policy = policy
 
     def select_move(self, game_state):
         root = MCTS_score_Node(game_state)
+
+        legal_moves = game_state.legal_moves()
+        if legal_moves[0] == Move.pass_turn():
+            return Move.pass_turn()
 
         for i in range(self.num_rounds):
             node = root
@@ -85,11 +91,15 @@ class MCTS_score_Agent(agent.Agent):
                 node.record_win(result)
                 node = node.parent
 
-        scored_moves = [
-            (child.move, child.num_rollouts)
-            for child in root.children
-        ]
-        scored_moves.sort(key=lambda x: x[1], reverse=True)        
+        scored_moves = [(child.move, child.num_rollouts) for child in root.children]
+
+        scored_moves.sort(key=lambda x: str(x[0]), reverse=True)
+
+        # print("##############  UCT : ###################")
+        # for elem in scored_moves:
+        #     print(str(elem[0]),elem[1])
+
+        scored_moves.sort(key=lambda x: x[1], reverse=True)
         # for child in root.children:
         # #for idx, child in enumerate(root.children):
         #     #print(f"Child {idx}, N = {child.num_rollouts}, score_frac = {child.score_frac(game_state.next_player)}")
@@ -137,11 +147,12 @@ class MCTS_score_Agent(agent.Agent):
         while not game.is_over():
             bot_move = bots[game.next_player].select_move(game)
             game = game.apply_move(bot_move)
-        
+            # game.add_history(game.board)
+
         game_result = scoring.compute_game_result(game)
         result = game_result.final_scores
         return result
-    
+
     def set_collector(self, collector):
         self.collector = collector
 
