@@ -86,12 +86,9 @@ class MCTSAgent(agent.Agent):
         #         best_pct = child_pct
         #         best_move = child.move
         # # print('Select move %s with win pct %.3f' % (best_move, best_pct))
-        
-        scored_moves = [
-            (child.move, child.num_rollouts)
-            for child in root.children
-        ]
-        scored_moves.sort(key=lambda x: x[1], reverse=True)    
+
+        scored_moves = [(child.move, child.num_rollouts) for child in root.children]
+        scored_moves.sort(key=lambda x: x[1], reverse=True)
         best_move = scored_moves[0][0]
         return best_move
 

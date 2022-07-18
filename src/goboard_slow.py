@@ -43,7 +43,7 @@ class GoString:
         self.liberties.add(point)
 
     def merged_with(self, go_string):
-        """ Returns a new Go string containing all stones in both strings """
+        """Returns a new Go string containing all stones in both strings"""
         assert go_string.color == self.color
         combined_stones = self.stones | go_string.stones
         return GoString(
@@ -116,8 +116,8 @@ class Board:
 
     def get(self, point):
         """
-        Returns the content of a point on the board : 
-        a Player if a stone exists or else None 
+        Returns the content of a point on the board :
+        a Player if a stone exists or else None
         """
         string = self._grid.get(point)
         if string is None:
@@ -126,7 +126,7 @@ class Board:
 
     def get_go_string(self, point):
         """
-        Returns the entire string of stones at a point : 
+        Returns the entire string of stones at a point :
         a GoString if a stone is on that point or else None
         """
         string = self._grid.get(point)

@@ -151,16 +151,16 @@ class Descent_Agent(agent.Agent):
 
     def select_move(self, game_state):
         root = Descent_Node(game_state)
-        
+
         legal_moves = game_state.legal_moves()
         if legal_moves[0] == Move.pass_turn():
             return Move.pass_turn()
-        #if len(root.univisted_moves) == 1:
-            #return root.univisted_moves[0]
+        # if len(root.univisted_moves) == 1:
+        # return root.univisted_moves[0]
         start_time = time.time()
-        while time.time() - start_time < self.time_budget :
+        while time.time() - start_time < self.time_budget:
             self.descent_iteration(root)
-        
+
         if self.collector is not None:
             self.dfs_record(root)
         self.root = root
