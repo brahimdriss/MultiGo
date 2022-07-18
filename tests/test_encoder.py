@@ -13,6 +13,7 @@ from MultiGo.src import gotypes
 from MultiGo.src.gotypes import Player
 from MultiGo.src import zero
 
+
 def generate_game(board_size, rounds, max_moves, temperature):
     boards, moves = [], []
 
@@ -24,7 +25,7 @@ def generate_game(board_size, rounds, max_moves, temperature):
     num_moves = 0
 
     while not game.is_over():
-        
+
         if game.next_player == gotypes.Player.black:
             move = bot.select_move(game)
         else:
@@ -37,17 +38,17 @@ def generate_game(board_size, rounds, max_moves, temperature):
         for idx, plane in enumerate(encoded):
             print(f"Plane {idx}")
             print(plane)
-        
+
         print("\n")
         print("\n")
         print("\n")
-        
+
         game = game.apply_move(move)
-        game.add_history(game.board)
+        # game.add_history(game.board)
         num_moves += 1
         if num_moves > max_moves:
             break
-    
+
     return game.winner()
 
 
